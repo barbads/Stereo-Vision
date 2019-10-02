@@ -39,7 +39,7 @@ if __name__ == "__main__":
     img0 = cv2.resize(img0, (1080, 720))
  #   img1 = cv2.resize(img1, (1080, 720))
 
-    print("Digitar numero da janela para algoritmo SAD (numero impar, por favor): ")
+    print("Digitar tamanho da janela, em pixels, para algoritmo SAD (numero impar, por favor): ")
     winsize = input()
     winsize = int(winsize)
 
