@@ -13,7 +13,6 @@ winsize = 0
 
 def DrawDot(event,x,y,flags,param):
     global contador
-    global img1
     global pixel
     global aux_x
     global aux_y
@@ -24,7 +23,7 @@ def DrawDot(event,x,y,flags,param):
             img0[aux_y,aux_x] = pixel
         aux_x = x
         aux_y = y
-        utils.SumAbsoluteDiff(img0, aux_x, aux_y, winsize)
+        utils.TemplateMatching(img0, aux_x, aux_y, winsize)
         pixel = img0[y,x]        
         clone0 = np.copy(img0)
         contador = 1

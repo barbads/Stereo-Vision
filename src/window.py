@@ -5,10 +5,9 @@ import os
 
 class Window:
 
-    def __init__(self, winsize, window, img0, img1):
+    def __init__(self, winsize, window, img0):
         self.window = window
         self.img0 = img0
-        self.img1 = img1
         self.winsize = winsize
     
     def CreateWindow(self, x, y):
@@ -20,9 +19,6 @@ class Window:
                 for i in range (0, self.winsize):
                     self.window[i,j] = self.img0[y0 + i , x0 + j]
         else:
-            border = utils.BorderCenterPoints(self.img0, self.winsize)
-            for p in border:
-                self.img0[p] = [0,255,0]
-            cv2.imshow("pontinhos", self.img0)
+            print("Tamanho de janela muito grande para um pixel tao proximo à borda!")            
         return self.window
     
