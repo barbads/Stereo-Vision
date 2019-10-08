@@ -61,7 +61,39 @@ def WorldCoord(coordE, coordD, baseline, focal_lenght):
     return (X, Y, Z)
 
 def Disparity(img0, img1):
-    stereo = cv2.StereoBM_create(numDisparities=16, blockSize=15)
-    disparity = stereo.compute(img0,img1)
+    #Aqui foi usada a funcao cv2.StereoBM. 
+    #fonte: http://timosam.com/python_opencv_depthimage
 
-    cv2.imshow("disp map",disparity)
+    window_size = 15 # 15 para imagem de mais de 1300 px
+    stereoE = cv2.StereoSGBM_create(minDisparity = 32, numDisparities = 256, blockSize=16,
+                                P1=8 * 3 * window_size ** 2,   
+                                P2=32 * 3 * window_size ** 2,
+                                disp12MaxDiff=1,
+                                uniquenessRatio=15,
+                                speckleWindowSize=0,
+                                speckleRange=2,
+                                preFilterCap=63)
+    
+    stereoD = cv2.ximgproc.createRightMatcher(stereoE)
+
+    # FILTER Parameters
+    lmbda = 80000
+    sigma = 1.2
+    visual_multiplier = 1.0
+    
+    wls_filter = cv2.ximgproc.createDisparityWLSFilter(matcher_left=stereoE)
+    wls_filter.setLambda(lmbda)
+    wls_filter.setSigmaColor(sigma)
+
+    displ = stereoE.compute(img0, img1)
+    dispr = stereoD.compute(img1, img0) 
+    displ = np.int16(displ)
+    dispr = np.int16(dispr)
+
+    filteredImg = wls_filter.filter(displ, img0, None, dispr) 
+    cv2.filterSpeckles(filteredImg, 0, 4000, 256) 
+
+    filteredImg = cv2.normalize(src=filteredImg, dst=filteredImg, beta=0, alpha=255, norm_type=cv2.NORM_MINMAX)
+    filteredImg = np.uint8(filteredImg)
+
+    cv2.imshow("disp map",filteredImg)    
