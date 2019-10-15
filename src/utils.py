@@ -4,13 +4,28 @@ from window import *
 
 
 
-def TemplateMatching(img0, aux_x, aux_y, winsize):
+def TemplateMatching(img0, aux_x, aux_y, winsize, piano,morpheus):
     window = np.zeros((winsize,winsize,3), dtype = np.uint8)
-    img1 = cv2.imread('Piano1.png') #lendo imagem da esquerda
-    img1 = cv2.resize(img1, (1080, 720))
+    
+    #lendo imagem da esquerda
+    
+    if morpheus == 1:
+        dir_ = './data/FurukawaPonce'
+        img1 = cv2.imread(dir_ + '/warriorR.jpg')
+        img1 = cv2.resize(img1, (1080, 720))
+    elif piano == 1:
+        dir_ = './data/Middleburry' 
+        dir_ = dir_ + '/Piano-perfect'
+        img1 = cv2.imread(dir_ + '/Piano1.png') 
+        img1 = cv2.resize(img1, (1080, 720))
+    else:
+        dir_ = './data/Middleburry' 
+        dir_ = dir_ + '/Playroom-perfect'
+        img1 = cv2.imread(dir_ + '/Playroom1.png') 
+        img1 = cv2.resize(img1, (1080, 720))
 
     #Criando um objeto janela a partir do valor W dado pelo usuario.
-    window = Window(winsize, window, img0)
+    window = Window(55, window, img0)
     window = window.CreateWindow(aux_x, aux_y)
 
     cv2.imshow("janela", window)
@@ -19,8 +34,6 @@ def TemplateMatching(img0, aux_x, aux_y, winsize):
     gray_template = window.copy()
     gray_image = cv2.cvtColor(gray_image, cv2.COLOR_BGR2GRAY)
     gray_template = cv2.cvtColor(gray_template, cv2.COLOR_BGR2GRAY)
-
-    Disparity(gray_image0, gray_image)
 
     #funcoes de matching do Open CV. localminimo e localmaximo sao 
     #os pontos de minimo e maximo. o utilizado aqui eh o maximo por conta
@@ -53,32 +66,56 @@ def CheckIfOutOfRange(img, x, y, winsize):
     else:
         return 0
 
-def WorldCoord(coordE, coordD, baseline, focal_lenght):
-    X = baseline*(coordE[0] + coordD[0])/2*(coordE[0] - coordD[0])
-    Y = baseline*(coordE[1] + coordD[1])/2*(coordE[0] - coordD[0])
-    Z = baseline*focal_lenght / (coordE[0] - coordD[0])
+def WorldCoord(height, width, focal_length, baseline, disp, piano):
+    
+    xL = np.arange(np.float32(width))
+    xL = np.tile(xL,(height,1))
+    yL = np.arange(np.float32(height))
+    yL = np.tile(yL,(width,1))
+    yR = yL
+    xR = xL + disp
+    const = baseline/2
+    deltaX = xL-xR
+    deltaX[deltaX == 0.0] = np.inf
+    X = -const*((xL + xR) / deltaX)
+    Y = -const*(np.transpose(yL + yR) / deltaX)
+    const = baseline * focal_length
+    Z = -const / deltaX
 
-    return (X, Y, Z)
+
+    if piano == 1:
+        Z[Z>5719] = 5719
+    #else:
+    #    Z[Z>21] = 21
+
+    Z = cv2.normalize(src=Z, dst=Z, beta=0, alpha=254, norm_type=cv2.NORM_MINMAX)
+    Z[Z == 0] = 255
+
+    world_coordinates = cv2.merge((X,Y,Z))
+
+    return world_coordinates
 
 def Disparity(img0, img1):
-    #Aqui foi usada a funcao cv2.StereoBM. 
+    #Aqui foi usada a funcao cv2.StereoSGBM. 
     #fonte: http://timosam.com/python_opencv_depthimage
+    #adaptado
 
-    window_size = 15 # 15 para imagem de mais de 1300 px
-    stereoE = cv2.StereoSGBM_create(minDisparity = 32, numDisparities = 256, blockSize=16,
-                                P1=8 * 3 * window_size ** 2,   
-                                P2=32 * 3 * window_size ** 2,
+    window_size = 11 
+    stereoE = cv2.StereoSGBM_create(minDisparity = 16, numDisparities = 80, blockSize=11,
+                                P1= 968,   
+                                P2 = 3872,
                                 disp12MaxDiff=1,
                                 uniquenessRatio=15,
-                                speckleWindowSize=0,
+                                speckleWindowSize=150,
                                 speckleRange=2,
-                                preFilterCap=63)
+                                preFilterCap=63,
+                                mode = 1)
     
     stereoD = cv2.ximgproc.createRightMatcher(stereoE)
 
     # FILTER Parameters
-    lmbda = 80000
-    sigma = 1.2
+    lmbda = 8000
+    sigma = 2
     visual_multiplier = 1.0
     
     wls_filter = cv2.ximgproc.createDisparityWLSFilter(matcher_left=stereoE)
@@ -91,9 +128,9 @@ def Disparity(img0, img1):
     dispr = np.int16(dispr)
 
     filteredImg = wls_filter.filter(displ, img0, None, dispr) 
-    cv2.filterSpeckles(filteredImg, 0, 4000, 256) 
+    cv2.filterSpeckles(filteredImg, 16, 4000, 256) 
 
     filteredImg = cv2.normalize(src=filteredImg, dst=filteredImg, beta=0, alpha=255, norm_type=cv2.NORM_MINMAX)
     filteredImg = np.uint8(filteredImg)
 
-    cv2.imshow("disp map",filteredImg)    
+    return filteredImg
