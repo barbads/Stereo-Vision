@@ -4,16 +4,12 @@ from window import *
 
 
 
-def TemplateMatching(img0, aux_x, aux_y, winsize, piano,morpheus):
+def TemplateMatching(img0, aux_x, aux_y, winsize, piano):
     window = np.zeros((winsize,winsize,3), dtype = np.uint8)
     
     #lendo imagem da esquerda
     
-    if morpheus == 1:
-        dir_ = './data/FurukawaPonce'
-        img1 = cv2.imread(dir_ + '/warriorR.jpg')
-        img1 = cv2.resize(img1, (1080, 720))
-    elif piano == 1:
+    if piano == 1:
         dir_ = './data/Middleburry' 
         dir_ = dir_ + '/Piano-perfect'
         img1 = cv2.imread(dir_ + '/Piano1.png') 
@@ -134,3 +130,7 @@ def Disparity(img0, img1):
     filteredImg = np.uint8(filteredImg)
 
     return filteredImg
+
+
+
+    
